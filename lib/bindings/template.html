@@ -1,0 +1,532 @@
+<style>
+    :root {
+        --panel-bg: #f8f9fa;
+        --panel-border: #dee2e6;
+        --text-color: #212529;
+        --text-muted: #6c757d;
+        --input-bg: #fff;
+        --input-border: #ced4da;
+        --button-bg: #e9ecef;
+        --button-hover-bg: #dee2e6;
+        --header-bg: #e9ecef;
+        --shadow: 0 2px 8px rgba(0,0,0,0.1);
+        --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    body {
+        font-family: var(--font-family);
+        background-color: #e9ecef;
+        color: var(--text-color);
+    }
+    .vis-panel {
+        position: fixed;
+        z-index: 9999;
+        background: var(--panel-bg);
+        padding: 10px;
+        border-radius: 6px;
+        box-shadow: var(--shadow);
+        font-size: 13px;
+        transition: all 0.3s ease;
+        border: 1px solid var(--panel-border);
+    }
+    .vis-panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--text-color);
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--panel-border);
+    }
+    .panel-min-btn {
+        border: none;
+        background: var(--button-bg);
+        padding: 2px 8px;
+        border-radius: 5px;
+        cursor: pointer; 
+        font-size: 16px;
+        line-height: 1;
+    }
+    .panel-min-btn:hover { background: var(--button-hover-bg); }
+    .panel-minimized {
+        height: 42px !important;
+        width: 160px !important;
+        padding: 8px 12px !important;
+        overflow: hidden !important;
+    }
+    .panel-minimized > *:not(.vis-panel-header) { display: none !important; }
+    .vis-panel select, .vis-panel input, .vis-panel button {
+        font-family: var(--font-family);
+        font-size: 12px;
+        border: 1px solid var(--input-border);
+        border-radius: 5px;
+        background-color: var(--input-bg);
+        color: var(--text-color); 
+        padding: 6px 8px;
+    }
+    .vis-panel button {
+        cursor: pointer;
+        background-color: var(--button-bg);
+    }
+    .vis-panel button:hover { background-color: var(--button-hover-bg); }
+    .vis-panel .control-row { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .vis-panel .control-row > div { display: flex; justify-content: space-between; align-items: center; }
+
+    /* Dark Theme */
+    body.dark-theme {
+        --panel-bg: #2b2b2b;
+        --panel-border: #424242;
+        --text-color: #e0e0e0;
+        --text-muted: #9e9e9e;
+        --input-bg: #313131;
+        --input-border: #515151;
+        --button-bg: #3c3c3c;
+        --button-hover-bg: #4a4a4a;
+        --header-bg: #313131;
+        background-color: #1a1a1a;
+    }
+    body.dark-theme #mynetwork { background-color: #222; }
+    body.dark-theme #visible-list div { border-bottom-color: var(--panel-border); }
+</style>
+<!-- Views Panel (top-left) -->
+<div id="views-panel" class="vis-panel" style="left:12px;top:12px;width:220px;">
+    <div class="vis-panel-header"><span>Views</span><button class="panel-min-btn" data-panel="views-panel">−</button></div>
+    <div class="control-row">
+        <div><label><input type="checkbox" name="view-checkbox" value="original" checked> Original View</label></div>
+        <div><label><input type="checkbox" name="view-checkbox" value="internet"> Internet Exposure</label></div>
+    </div>
+</div>
+
+<div id="pyvis-controls" class="vis-panel" style="right:12px;top:12px;width:260px;">
+    <div class="vis-panel-header"><span>Controls</span><button class="panel-min-btn" data-panel="pyvis-controls">−</button></div>
+    <div class="control-row">
+        <div><label for="filter-type">Type:</label> <select id="filter-type" multiple size="4" style="width:170px;"><option value="__all">All</option></select></div>
+        <div><label for="filter-rg">Resource Group:</label> <select id="filter-rg" style="width:170px;"><option value="__all">All</option></select></div>
+    </div>
+    <div class="control-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--panel-border);">
+        <div><label><input id="toggle-physics" type="checkbox" checked> Physics</label></div>
+        <div style="justify-content: flex-start;"><button id="theme-toggle">Toggle Theme</button></div>
+    </div>
+</div> 
+
+<!-- visible items panel (bottom-left) -->
+<div id="visible-panel" class="vis-panel" style="left:12px;bottom:12px;max-height:35vh;width:280px;">
+    <div class="vis-panel-header"><span>Visible Items</span><button class="panel-min-btn" data-panel="visible-panel">−</button></div>
+    <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+        <input id="visible-search" placeholder="Search visible items..." style="flex:1;padding:5px;border:1px solid #ddd;border-radius:4px;font-size:12px;" />
+        <button id="visible-clear" title="Clear" style="padding:5px;border-radius:4px;border:1px solid #ddd;background:#fff;cursor:pointer">×</button>
+    </div>
+    <div id="visible-list" style="max-height:34vh;overflow:auto;padding-left:6px"></div>
+</div>
+
+<!-- properties panel (bottom-right) -->
+<div id="properties-panel" class="vis-panel" style="right:12px;bottom:12px;max-height:60vh;width:320px;">
+    <div class="vis-panel-header"><span>Node Properties</span><button class="panel-min-btn" data-panel="properties-panel">−</button></div>
+    <div id="properties-content" style="max-height:54vh;overflow:auto;padding-left:6px">Select a node to see properties</div>
+</div>
+
+<script>
+;(function(){
+    // wait until pyvis defines `network`
+    function whenReady(cb){
+        if(typeof network !== 'undefined' && network.body && network.body.data){ cb(); }
+        else setTimeout(()=>whenReady(cb),200);
+    }
+    whenReady(function(){
+        const nodesDS = network.body.data.nodes;
+        const edgesDS = network.body.data.edges;
+        const nodes = nodesDS.get();
+
+        // Apply VM status colors
+        const vmNodeUpdates = [];
+        nodes.forEach(node => {
+            // Check if the node is a VM and has a powerState property.
+            // We assume 'powerState' contains values like 'VM running' or 'VM deallocated'.
+            if (node.group === 'Microsoft.Compute/virtualMachines' && node.powerState) {
+                if (node.powerState.toLowerCase() === 'vm running') {
+                    // If running, set color to green.
+                    const originalColor = node.color || {};
+                    vmNodeUpdates.push({ id: node.id, color: { ...originalColor, background: '#28a745', border: '#218838' } });
+                }
+                // For other states (e.g., 'VM deallocated'), we do nothing, so it keeps its default icon/color.
+            }
+        });
+        if (vmNodeUpdates.length > 0) { nodesDS.update(vmNodeUpdates); }
+
+        // hover-to-highlight: when hovering over a node, highlight its neighbors and edges
+        let hoverHighlightId = null;
+        let _savedNodeStyles = {};
+        let _savedEdgeStyles = {};
+        network.on('hoverNode', function(params){
+            const nid = params.node;
+            try{
+                // connected nodes and edges
+                const connectedNodes = network.getConnectedNodes(nid) || [];
+                const connectedEdges = network.getConnectedEdges(nid) || [];
+                // save current styles
+                _savedNodeStyles = {};
+                _savedEdgeStyles = {};
+                [nid].concat(connectedNodes).forEach(id=>{
+                    const n = nodesDS.get(id);
+                    if(n) _savedNodeStyles[id] = {color: n.color, size: n.size, font: n.font};
+                });
+                connectedEdges.forEach(eid=>{ const e = edgesDS.get(eid); if(e) _savedEdgeStyles[eid] = {color: e.color, width: e.width}; });
+
+                // apply highlight styles
+                const nodeUpdates = [nid].concat(connectedNodes).map(id=>({id:id, color:{border:'#ff5722', background:'#fff1e6'}, size: Math.min((nodesDS.get(id)?.size||30)+8, 60), font:{size:14, color:'#000'}}));
+                nodesDS.update(nodeUpdates);
+                const edgeUpdates = connectedEdges.map(eid=>({id: eid, color: {color:'#ff5722'}, width: 3}));
+                edgesDS.update(edgeUpdates);
+                hoverHighlightId = nid;
+            }catch(e){/* noop */}
+        });
+
+        network.on('blurNode', function(params){
+            if(hoverHighlightId){
+                try{
+                    const nodeUpdates = Object.keys(_savedNodeStyles).map(id=>({id:id, ...( _savedNodeStyles[id] )}));
+                    if(nodeUpdates.length) nodesDS.update(nodeUpdates);
+                    const edgeUpdates = Object.keys(_savedEdgeStyles).map(id=>({id:id, ...( _savedEdgeStyles[id] )}));
+                    if(edgeUpdates.length) edgesDS.update(edgeUpdates);
+                }catch(e){/* noop */}
+                hoverHighlightId = null;
+                _savedNodeStyles = {};
+                _savedEdgeStyles = {};
+            }
+        });
+        // build unique lists
+        const types = Array.from(new Set(nodes.map(n=>n.group||'unknown'))).sort();
+        const rgs = Array.from(new Set(nodes.map(n=>n.resourceGroup||'__none'))).sort();
+
+        const typeSel = document.getElementById('filter-type');
+        const rgSel = document.getElementById('filter-rg');
+
+        types.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; typeSel.appendChild(o); });
+        rgs.forEach(r=>{ const o=document.createElement('option'); o.value=r; o.textContent=r; rgSel.appendChild(o); });
+
+        function applyFilters(){
+            // support multi-select for Types
+            const selTypes = Array.from(typeSel.selectedOptions).map(o=>o.value);
+            const selRg = rgSel.value;
+            const all = nodesDS.get();
+            const selTypesAll = selTypes.includes('__all') || selTypes.length === 0;
+            const updates = all.map(n=>{
+                const matchesType = selTypesAll || selTypes.includes((n.group||'unknown'));
+                const matchesRg = (selRg==='__all') || ((n.resourceGroup||'__none')===selRg);
+                return {id:n.id, hidden: !(matchesType && matchesRg)};
+            });
+            nodesDS.update(updates);
+
+            // after filtering, center & cluster visible nodes so they don't spread out
+            try{
+                const visibleIds = updates.filter(u=>!u.hidden).map(u=>u.id).filter(Boolean);
+                if(visibleIds.length){
+                    // fit view to the visible nodes
+                    try{ network.fit({nodes: visibleIds, animation:{duration:300}}); }catch(e){}
+
+                    // enable physics briefly to allow nodes to settle closer together,
+                    // then disable physics so user can drag/freeze positions
+                    try{
+                        network.setOptions({physics:{enabled:true}});
+                        setTimeout(()=>{ network.setOptions({physics:{enabled:false}}); updateVisibleList(); }, 800);
+                    }catch(e){}
+                }
+            }catch(e){/* noop */}
+
+            // update visible list after filters
+            updateVisibleList();
+        }
+
+        function updateVisibleList(){
+            // List all nodes that match current filters (not just those currently on-screen)
+            const visibleDiv = document.getElementById('visible-list');
+            visibleDiv.innerHTML = '';
+            const all = nodesDS.get();
+            const positions = network.getPositions();
+            const container = network.body.container;
+            const rect = container.getBoundingClientRect();
+
+            for(const n of all){
+                if(n.hidden) continue;
+                const pos = positions[n.id] || null;
+                let onScreen = false;
+                if(pos){
+                    try{
+                        const dom = network.canvasToDOM(pos);
+                        onScreen = dom.x >= rect.left && dom.x <= rect.right && dom.y >= rect.top && dom.y <= rect.bottom;
+                    }catch(e){ onScreen = false; }
+                }
+
+                const item = document.createElement('div');
+                item.style.display = 'flex';
+                item.style.justifyContent = 'space-between';
+                item.style.alignItems = 'center';
+                item.style.padding = '2px 4px';
+                item.style.borderBottom = '1px solid #eee';
+                item.style.cursor = 'pointer';
+
+                const label = document.createElement('span');
+                label.textContent = n.label || n.id || n.title || '';
+                item.appendChild(label);
+
+                const badge = document.createElement('span');
+                badge.textContent = onScreen ? '●' : '';
+                badge.title = onScreen ? 'On screen' : 'Off screen';
+                badge.style.color = onScreen ? 'green' : '#ccc';
+                badge.style.marginLeft = '8px';
+                item.appendChild(badge);
+
+                // store nid on element for later auto-scroll
+                item.setAttribute('data-nid', n.id);
+                item.onclick = ((nid)=>{ return function(){ network.focus(nid, {scale:1.2, animation:{duration:300}}); showNodeProperties(nid); highlightNode(nid); }; })(n.id);
+                visibleDiv.appendChild(item);
+            }
+        }
+
+        // selection/highlight helpers
+        let lastSelectedId = null;
+        const originalStyles = {};
+
+        function highlightNode(nodeId){
+            if(!nodeId) return;
+            try{
+                // restore previous
+                if(lastSelectedId && originalStyles[lastSelectedId]){
+                    nodesDS.update([{id: lastSelectedId, ...originalStyles[lastSelectedId]}]);
+                }
+                // store current style
+                const cur = nodesDS.get(nodeId);
+                if(cur && !originalStyles[nodeId]){
+                    originalStyles[nodeId] = {};
+                    if(cur.color) originalStyles[nodeId].color = cur.color;
+                    if(cur.size) originalStyles[nodeId].size = cur.size;
+                    if(cur.font) originalStyles[nodeId].font = cur.font;
+                }
+                // apply highlight
+                nodesDS.update([{id: nodeId, color:{border:'#ff5722', background:'#fff1e6'}, size:36, font:{size:14, color:'#000'}}]);
+                lastSelectedId = nodeId;
+
+                // scroll visible list entry into view if present
+                try{
+                    const visibleDiv = document.getElementById('visible-list');
+                    const el = visibleDiv.querySelector('[data-nid="'+nodeId+'"]');
+                    if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+                }catch(e){}
+            }catch(e){}
+        }
+
+        function showNodeProperties(nodeId){
+            if(!nodeId) return;
+            const all = nodesDS.get();
+            const node = all.find(x=>String(x.id) === String(nodeId));
+            const out = document.getElementById('properties-content');
+            if(!node){ out.innerHTML = '<i>Node not found</i>'; return; }
+
+            // Build properties display. Prefer structured attributes if available.
+            const parts = [];
+            if(node.label) parts.push(['Name', node.label]);
+            if(node.group) parts.push(['Type', node.group]);
+            if(node.resourceGroup) parts.push(['Resource Group', node.resourceGroup]);
+            if(node.details){
+                // details may contain HTML with <br>; include it
+                parts.push(['Details', node.details]);
+            }
+            // include any other raw attributes
+            Object.keys(node).forEach(k=>{
+                if(['id','label','details','group','resourceGroup'].includes(k)) return;
+                const v = node[k];
+                if(v === undefined || v === null || v === '') return;
+                parts.push([k, String(v)]);
+            });
+
+            // render
+            out.innerHTML = '';
+            parts.forEach(p=>{
+                const row = document.createElement('div');
+                const kspan = document.createElement('div');
+                kspan.style.fontWeight = '600';
+                kspan.style.marginTop = '6px';
+                kspan.textContent = p[0];
+                const vspan = document.createElement('div');
+                vspan.style.marginLeft = '6px';
+                // if the value looks like HTML (title), insert as HTML
+                if (p[0] === 'Details') {
+                    vspan.innerHTML = p[1];
+                } else if (p[0] === 'properties') {
+                    // Try to parse and pretty-print if it's a JSON string
+                    try {
+                        const jsonObj = JSON.parse(p[1]);
+                        const pre = document.createElement('pre');
+                        pre.style.margin = '0';
+                        pre.style.padding = '4px 8px';
+                        pre.style.backgroundColor = 'var(--header-bg)';
+                        pre.style.borderRadius = '4px';
+                        pre.style.whiteSpace = 'pre-wrap';
+                        pre.textContent = JSON.stringify(jsonObj, null, 2);
+                        vspan.appendChild(pre);
+                    } catch (e) { vspan.textContent = p[1]; } // fallback to plain text
+                }
+                else { vspan.textContent = p[1]; }
+                row.appendChild(kspan);
+                row.appendChild(vspan);
+                out.appendChild(row);
+            });
+        }
+
+        typeSel.addEventListener('change', applyFilters);
+        rgSel.addEventListener('change', applyFilters);
+
+        // wire minimize buttons
+        document.querySelectorAll('.panel-min-btn').forEach(b=>{
+            b.addEventListener('click', function(ev){
+                const panel = this.dataset.panel;
+                const el = document.getElementById(panel);
+                if(!el) return;
+                const isMin = el.classList.toggle('panel-minimized');
+                this.textContent = isMin ? '+' : '−';
+            });
+        });
+
+        // visible items search
+        const visSearch = document.getElementById('visible-search');
+        const visClear = document.getElementById('visible-clear');
+        let visTimeout = null;
+        function filterVisibleList(){
+            const q = (visSearch.value||'').toLowerCase();
+            const items = Array.from(document.getElementById('visible-list').children);
+            items.forEach(it=>{
+                const txt = it.textContent || '';
+                it.style.display = (q === '' || txt.toLowerCase().includes(q)) ? '' : 'none';
+            });
+        }
+        visSearch.addEventListener('input', ()=>{
+            if(visTimeout) clearTimeout(visTimeout);
+            visTimeout = setTimeout(()=>{ filterVisibleList(); }, 180);
+        });
+        visClear.addEventListener('click', ()=>{ visSearch.value=''; filterVisibleList(); visSearch.focus(); });
+
+        // physics toggle
+        const physicsChk = document.getElementById('toggle-physics');
+        physicsChk.addEventListener('change', ()=>{
+            network.setOptions({physics:{enabled: physicsChk.checked}});
+        });
+
+        // show node properties when a node is selected (via click/select)
+        network.on('selectNode', function(params){
+            if(params && params.nodes && params.nodes.length){
+                const nid = params.nodes[0];
+                showNodeProperties(nid);
+                highlightNode(nid);
+                try{
+                    const p = document.getElementById('properties-panel');
+                    p.style.transition = 'box-shadow 0.2s ease';
+                    p.style.boxShadow = '0 0 0 3px rgba(255,87,34,0.15), 0 2px 6px rgba(0,0,0,0.2)';
+                    setTimeout(()=>{ p.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)'; }, 600);
+                }catch(e){}
+            }
+        });
+
+        // update visible list on zoom, drag, or after physics stabilized
+        network.on('zoom', updateVisibleList);
+        network.on('dragEnd', updateVisibleList);
+        network.on('afterDrawing', updateVisibleList);
+
+        // Theme toggle
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const THEME_KEY = 'azure_graph_theme_v1';
+        function applyTheme(theme) {
+            document.body.classList.toggle('dark-theme', theme === 'dark');
+            localStorage.setItem(THEME_KEY, theme);
+        }
+        themeToggleBtn.addEventListener('click', () => {
+            const currentTheme = document.body.classList.contains('dark-theme') ? 'dark' : 'light';
+            applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        });
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        if (savedTheme) {
+            applyTheme(savedTheme);
+        }
+
+        // --- Views Panel Logic ---
+        let _internetNodeCache = null;
+        let _internetEdgesCache = [];
+
+        function storeAndRemoveInternetNode() {
+            const internetNode = nodesDS.get({ filter: item => item.label === 'Internet' })[0];
+            if (internetNode) {
+                _internetNodeCache = internetNode;
+                const connectedEdgeIds = network.getConnectedEdges(internetNode.id);
+                _internetEdgesCache = edgesDS.get(connectedEdgeIds);
+                
+                // Remove from the dataset
+                nodesDS.remove(internetNode.id);
+            }
+        }
+
+        function applyViewFilter(viewName) {
+            // First, ensure the internet node is present for views that need it
+            if (viewName === 'internet' && _internetNodeCache && !nodesDS.get(_internetNodeCache.id)) {
+                nodesDS.add(_internetNodeCache);
+                edgesDS.add(_internetEdgesCache);
+            }
+
+            // Then, apply visibility filters
+            let nodeUpdates = [];
+            const allNodeIds = nodesDS.getIds({ filter: item => item.label !== 'Internet' });
+
+            if (viewName === 'internet') {
+                const internetNode = nodesDS.get({ filter: item => item.label === 'Internet' })[0];
+                if (internetNode) {
+                    const connectedNodeIds = network.getConnectedNodes(internetNode.id);
+                    const visibleIds = new Set([internetNode.id, ...connectedNodeIds]);
+                    // Hide all nodes that are NOT the internet node or its direct connections
+                    const allNodes = nodesDS.get();
+                    nodeUpdates = allNodes.map(n => ({ id: n.id, hidden: !visibleIds.has(n.id) }));
+                }
+            } else if (viewName === 'original') {
+                // If the internet node is currently in the dataset, remove it.
+                storeAndRemoveInternetNode();
+                // Ensure all other nodes are visible
+                nodeUpdates = allNodeIds.map(id => ({ id: id, hidden: false }));
+            } else {
+                // For other views (or clearing a view), ensure internet node is gone and all others are visible
+                storeAndRemoveInternetNode();
+                nodeUpdates = allNodeIds.map(id => ({ id: id, hidden: false }));
+            }
+            
+            if (nodeUpdates.length > 0) {
+                nodesDS.update(nodeUpdates);
+                network.fit({ animation: { duration: 500 } });
+            }
+            updateVisibleList();
+        }
+
+        const viewCheckboxes = document.querySelectorAll('input[name="view-checkbox"]');
+        viewCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    // Uncheck other checkboxes to act like radio buttons
+                    viewCheckboxes.forEach(otherCb => {
+                        if (otherCb !== this) otherCb.checked = false;
+                    });
+                    applyViewFilter(this.value);
+                } else {
+                    // If the currently active checkbox is unchecked, clear the view
+                    applyViewFilter(null);
+                }
+            });
+        });
+
+        // apply default
+        // applyFilters(); // This is now triggered by the default view
+
+        // --- Initialize Default View on Load ---
+        // We cache and remove the internet node right away to establish the 'Original View' baseline.
+        storeAndRemoveInternetNode();
+        applyFilters(); // Apply any other default filters
+        updateVisibleList();
+    });
+})();
+</script>
