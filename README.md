@@ -1,4 +1,4 @@
-# Azure Cloud Visualizer (CAV)
+# Cloud Visualizer (CAV)
 
 Visualize your Azure cloud from a CSV export. This tool generates a single, interactive HTML file to map resource relationships and dependencies. Features an "Internet Exposure" view for quick security analysis of public-facing NSGs and Storage Accounts. Stack: Python, Pandas, NetworkX, JS.
 
